@@ -1,0 +1,102 @@
+---
+title: "test"
+author: "Rajesh"
+date: "June 15, 2015"
+output: html_document
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+## Loading and preprocessing the data
+Read Data 
+```{r}
+mydataset <- read.csv("activity.csv")
+```
+
+## What is mean total number of steps taken per day?
+Get total steps ber day - using tapply 
+```{r}
+totstepsbydate <- tapply(mydataset$steps, mydataset$date, sum)
+```
+
+Plot histogram
+```{r, echo=FALSE}
+hist(totstepsbydate,  xlab = "Steps Per Day", ylab = "Interval", main = "Steps per day")
+```
+
+remove na values and calculate Mean and madin 
+```{r}
+totstepsbydate <- totstepsbydate[!is.na(totstepsbydate)]
+meanvalue <- mean(totstepsbydate)
+meanvalue
+medianvalue <- median(totstepsbydate)
+medianvalue
+
+```
+Check total and missing values
+```{r}
+nrow(mydataset) 
+sum(is.na(mydataset$steps)) 
+meanstepsday <- tapply(mydataset$steps, mydataset$date, mean)
+```
+Calculate mean steps / interval (Remove NA values)
+```{r}
+meansteps <- tapply(mydataset$steps, mydataset$interval, mean, na.rm = TRUE)
+```
+
+## What is the average daily activity pattern?
+Plot line graph of average daily activity pattern
+```{r, echo=FALSE}
+plot(row.names(meansteps), meansteps, type = "l", xlab = "5-minute interval", 
+  ylab = "Steps taken, averaged across all days ", main = "Average daily activity pattern", )
+```
+Maximum average number of steps over all days
+```{r}
+names(which.max(meansteps))
+sum(is.na(mydataset))
+```
+## Imputing missing values
+Loop thru data and replace NA with meanstep value
+```{r}
+for (i in 1:dim(mydataset)[1]) {
+ ifelse (is.na(mydataset$steps[i]) ,   mydataset$steps[i] <-  mean(meansteps) ,mydataset$steps[i] <- mydataset$steps[i])
+}
+```
+Check na got removed
+```{r}
+nrow(mydataset) 
+sum(is.na(mydataset$steps)) 
+```
+Re-calc using tapply as NA has been replaced and Plot Histogram 
+```{r}
+newtotalsteps <- tapply(mydataset$steps, mydataset$date, sum)
+hist(newtotalsteps,  xlab = "Total Steps / Day", ylab = "Frequency", main = "Total Steps taken per day - with average meanstep")
+```
+Mean and madin 
+```{r}
+meanvalue <- mean(newtotalsteps)
+meanvalue
+medianvalue <- median(newtotalsteps)
+medianvalue
+```
+## Are there differences in activity patterns between weekdays and weekends?
+```{r}
+mydataset$date <- as.Date(mydataset$date)
+getdays <- weekdays(mydataset$date)
+mydataset$week_weekend <- ifelse(getdays == "Saturday" | getdays == "Sunday", "Weekend", "Weekday")
+mv <- aggregate(mydataset$steps, by = list(mydataset$interval, mydataset$week_weekend), mean)                                                                          
+names(mv) <- c("interval", "week_weekend", "steps")
+a <- xyplot( mydataset$steps ~  mydataset$interval |  mydataset$week_weekend, mv, type = "l", layout = c(1, 2), xlab = "Interval", ylab = "Number of steps")
+print(a)
+```
+
+##mean, median, max and min of the steps across all intervals and days by Weekdays/Weekends
+```{r}
+tapply(mv$steps, mv$week_weekend, function(x) {
+  c(MINIMUM = min(x), MEAN = mean(x), MEDIAN = median(x), MAXIMUM = max(x))
+})
+```
+
+
